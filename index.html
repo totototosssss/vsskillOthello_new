@@ -24,15 +24,15 @@
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body { margin: 0; width: 100%; min-height: 100%; background: radial-gradient(circle at top, #19192c, var(--bg) 58%); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { height: 100dvh; overflow: hidden; }
+    body { min-height: 100dvh; overflow: hidden; }
     button, input, select { font: inherit; }
     button { border: 0; outline: 0; cursor: pointer; transition: transform .12s, opacity .2s, border-color .2s, background .2s; }
     button:active { transform: scale(.97); }
     button:disabled { opacity: .42; cursor: not-allowed; }
 
-    .view { position: absolute; inset: 0; display: none; overflow-y: auto; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
+    .view { position: fixed; inset: 0; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(max(12px, env(safe-area-inset-top)) + 8px) 12px calc(max(12px, env(safe-area-inset-bottom)) + 12px); }
     .view.active { display: flex; }
-    #login-view, #setup-view { align-items: center; justify-content: center; }
+    #login-view, #setup-view { align-items: flex-start; justify-content: center; }
 
     .box { width: min(94vw, 540px); background: rgba(23,23,29,.96); border: 1px solid var(--line); border-radius: 24px; padding: 22px 18px; text-align: center; box-shadow: 0 24px 80px rgba(0,0,0,.45); }
     .box h1, .box h2 { margin: 0 0 10px; line-height: 1.15; }
@@ -56,8 +56,8 @@
     .card-config-name { font-size: .82rem; font-weight: 900; }
     .card-config-desc { margin-top: 2px; color: var(--muted); font-size: .68rem; line-height: 1.25; }
 
-    #game-view { align-items: center; justify-content: center; }
-    #game { width: min(100%, 1140px); display: grid; grid-template-columns: 285px minmax(320px, 510px) 285px; gap: 14px; align-items: center; }
+    #game-view { align-items: flex-start; justify-content: center; overflow-y: auto; }
+    #game { width: min(100%, 1140px); display: grid; grid-template-columns: 285px minmax(320px, 510px) 285px; gap: 14px; align-items: start; margin: 0 auto; }
     .side { background: rgba(23,23,29,.95); border: 1px solid var(--line); border-radius: 22px; padding: 14px; min-height: 520px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
     .player { background: var(--panel2); border: 1px solid var(--line); border-radius: 18px; padding: 14px; }
     .player.active { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(100,210,255,.14), 0 0 28px rgba(10,132,255,.12); }
@@ -119,9 +119,11 @@
 
     @media (max-width: 920px) {
       body { overflow: hidden; }
-      .view { padding: max(6px, env(safe-area-inset-top)) 6px max(8px, env(safe-area-inset-bottom)); }
-      #game-view { align-items: flex-start; justify-content: flex-start; overflow: hidden; }
-      #game { width: 100%; height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))); display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto minmax(86px, 128px); gap: 6px; overflow: hidden; }
+      .view { padding: calc(max(12px, env(safe-area-inset-top)) + 14px) 6px calc(max(12px, env(safe-area-inset-bottom)) + 16px); }
+      #login-view, #setup-view { align-items: flex-start; justify-content: center; }
+      #setup-view .box, #login-view .box { margin-top: 0; margin-bottom: 18px; }
+      #game-view { align-items: flex-start; justify-content: flex-start; overflow-y: auto; }
+      #game { width: 100%; min-height: auto; display: grid; grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 6px; overflow: visible; padding-bottom: 12px; }
       .center { order: 1; gap: 6px; min-height: 0; }
       #side-black, #side-white { min-height: 0; }
       #side-black { order: 2; }
@@ -131,7 +133,7 @@
       .badge, .mini { padding: 6px 9px; font-size: .72rem; max-width: 65vw; overflow: hidden; text-overflow: ellipsis; }
       #status { min-height: 34px; padding: 7px 9px; border-radius: 13px; font-size: .78rem; }
       #host-controls .btn-primary { padding: 10px 12px; margin-top: 0; border-radius: 12px; font-size: .9rem; }
-      #board-wrap { width: min(96vw, 54dvh); max-width: 430px; }
+      #board-wrap { width: min(96vw, 48dvh); max-width: 430px; }
       #board { border-radius: 10px; border-width: 2px; gap: 1px; }
       .stone { width: 78%; height: 78%; }
       .player { padding: 8px; border-radius: 14px; }
@@ -154,7 +156,7 @@
       .desc { font-size: .60rem; line-height: 1.18; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .use { display: none; }
       .side.is-me { order: 2; }
-      .side.is-opponent { order: 3; max-height: 128px; }
+      .side.is-opponent { order: 3; max-height: 136px; }
       .side.is-me .hand { max-height: 126px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
       .side.is-opponent .player { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
       .side.is-opponent .p-top { margin-bottom: 0; }
@@ -168,7 +170,8 @@
     }
 
     @media (max-width: 380px) {
-      #board-wrap { width: min(96vw, 49dvh); }
+      .view { padding-top: calc(max(14px, env(safe-area-inset-top)) + 16px); }
+      #board-wrap { width: min(96vw, 44dvh); }
       .card { min-height: 46px; }
       .desc { font-size: .56rem; }
       .c-name { font-size: .68rem; }
@@ -577,8 +580,10 @@ function copyShareUrl() { copyText(location.origin + location.pathname + `?r=${e
 function copyKifu() { copyText(makeKifu(), "棋譜をコピーしました"); }
 function copyText(text, ok) { if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast(ok)).catch(() => fallbackCopy(text, ok)); else fallbackCopy(text, ok); }
 function fallbackCopy(text, ok) { const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.focus(); ta.select(); try { document.execCommand("copy"); toast(ok); } catch { toast("コピーに失敗しました"); } document.body.removeChild(ta); }
-function makeKifu() { const ct = count(); const result = ct.black > ct.white ? "黒の勝利" : ct.white > ct.black ? "白の勝利" : "引き分け"; const lines = []; lines.push("Skill Othello Duel 棋譜"); lines.push("===================="); lines.push(`Room ID: ${rId || "-"}`); lines.push(`Host: ${hostName || "-"}`); lines.push(`Turn Time: ${Math.round(config.baseTurnTime/1000)}秒`); lines.push(`Timeout: ${config.timeoutMode === "random" ? "ランダム合法手" : "自動パス"}`); lines.push(`Enabled Cards: ${config.enabledCards.map(id => CARD_DEFS[id] ? CARD_DEFS[id].name : id).join(", ")}`); lines.push(`Started: ${formatTime(gameStartedAt)}`); lines.push(`Finished: ${formatTime(gameFinishedAt)}`); lines.push(""); lines.push("Players"); lines.push("--------------------"); lines.push(`黒: ${players[0].name || "-"}`); lines.push(`白: ${players[1].name || "-"}`); lines.push(""); lines.push("Result"); lines.push("--------------------"); lines.push(result); lines.push(`黒: ${ct.black}`); lines.push(`白: ${ct.white}`); lines.push(""); lines.push("Moves / Cards / Draws"); lines.push("--------------------"); if (!history.length) lines.push("(no history)"); history.forEach(h => { if (h.type === "move") lines.push(`${String(h.no).padStart(2,"0")}. ${h.color} ${h.player} ${h.coord} flip ${h.flip} [黒 ${h.black} - 白 ${h.white}]`); else if (h.type === "card") lines.push(`    ${h.player} [${h.card}] ${h.detail || ""}`); else if (h.type === "draw") lines.push(`    ${h.player} [DRAW] ${h.detail || "カードを1枚引いた"}`); else if (h.type === "pass") lines.push(`    ${h.color} ${h.player} PASS (${h.reason})`); }); lines.push(""); lines.push("Final Board"); lines.push("--------------------"); lines.push(boardText()); return lines.join("\n"); }
-function boardText() { const lines = ["  a b c d e f g h"]; for (let r=0;r<S;r++) { const row = []; for (let c=0;c<S;c++) row.push(board[r][c] === 1 ? "B" : board[r][c] === 2 ? "W" : "."); lines.push(`${r+1} ${row.join(" ")}`); } return lines.join("\n"); }
+function makeKifu() { const ct = count(); const result = ct.black > ct.white ? "黒の勝利" : ct.white > ct.black ? "白の勝利" : "引き分け"; const lines = []; lines.push("Skill Othello Duel 棋譜"); lines.push("===================="); lines.push(`Room ID: ${rId || "-"}`); lines.push(`Host: ${hostName || "-"}`); lines.push(`Turn Time: ${Math.round(config.baseTurnTime/1000)}秒`); lines.push(`Timeout: ${config.timeoutMode === "random" ? "ランダム合法手" : "自動パス"}`); lines.push(`Enabled Cards: ${config.enabledCards.map(id => CARD_DEFS[id] ? CARD_DEFS[id].name : id).join(", ")}`); lines.push(`Started: ${formatTime(gameStartedAt)}`); lines.push(`Finished: ${formatTime(gameFinishedAt)}`); lines.push(""); lines.push("Players"); lines.push("--------------------"); lines.push(`黒: ${players[0].name || "-"}`); lines.push(`白: ${players[1].name || "-"}`); lines.push(""); lines.push("Result"); lines.push("--------------------"); lines.push(result); lines.push(`黒: ${ct.black}`); lines.push(`白: ${ct.white}`); lines.push(""); lines.push("Moves / Cards / Draws"); lines.push("--------------------"); if (!history.length) lines.push("(no history)"); history.forEach(h => { if (h.type === "move") lines.push(`${String(h.no).padStart(2,"0")}. ${h.color} ${h.player} ${h.coord} flip ${h.flip} [黒 ${h.black} - 白 ${h.white}]`); else if (h.type === "card") lines.push(`    ${h.player} [${h.card}] ${h.detail || ""}`); else if (h.type === "draw") lines.push(`    ${h.player} [DRAW] ${h.detail || "カードを1枚引いた"}`); else if (h.type === "pass") lines.push(`    ${h.color} ${h.player} PASS (${h.reason})`); }); lines.push(""); lines.push("Final Board"); lines.push("--------------------"); lines.push(boardText()); return lines.join("
+"); }
+function boardText() { const lines = ["  a b c d e f g h"]; for (let r=0;r<S;r++) { const row = []; for (let c=0;c<S;c++) row.push(board[r][c] === 1 ? "B" : board[r][c] === 2 ? "W" : "."); lines.push(`${r+1} ${row.join(" ")}`); } return lines.join("
+"); }
 function formatTime(t) { if (!t) return "-"; const d = new Date(t); const z = n => String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`; }
 </script>
 </body>

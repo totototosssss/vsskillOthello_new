@@ -699,22 +699,38 @@
 
     @media (max-width: 920px) {
       body {
-        overflow: auto;
+        overflow: hidden;
+      }
+
+      .view {
+        padding: max(6px, env(safe-area-inset-top)) 6px max(8px, env(safe-area-inset-bottom));
       }
 
       #game-view {
         align-items: flex-start;
         justify-content: flex-start;
+        overflow: hidden;
       }
 
       #game {
+        width: 100%;
+        height: calc(100dvh - max(6px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
+        display: grid;
         grid-template-columns: 1fr;
-        gap: 10px;
-        padding-bottom: 20px;
+        grid-template-rows: auto auto 1fr;
+        gap: 6px;
+        overflow: hidden;
       }
 
       .center {
         order: 1;
+        gap: 6px;
+        min-height: 0;
+      }
+
+      #side-black,
+      #side-white {
+        min-height: 0;
       }
 
       #side-black {
@@ -726,38 +742,252 @@
       }
 
       .side {
-        min-height: auto;
+        padding: 8px;
+        border-radius: 16px;
+        gap: 7px;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .topbar {
+        gap: 6px;
+      }
+
+      .badge,
+      .mini {
+        padding: 6px 9px;
+        font-size: 0.72rem;
+        max-width: 65vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      #status {
+        min-height: 34px;
+        padding: 7px 9px;
+        border-radius: 13px;
+        font-size: 0.78rem;
+      }
+
+      #host-controls .btn-primary {
+        padding: 10px 12px;
+        margin-top: 0;
+        border-radius: 12px;
+        font-size: 0.9rem;
+      }
+
+      #board-wrap {
+        width: min(96vw, 54dvh);
+        max-width: 430px;
+      }
+
+      #board {
+        border-radius: 10px;
+        border-width: 2px;
+        gap: 1px;
+      }
+
+      .stone {
+        width: 78%;
+        height: 78%;
+      }
+
+      .player {
+        padding: 8px;
+        border-radius: 14px;
+      }
+
+      .p-top {
+        margin-bottom: 6px;
+      }
+
+      .p-name {
+        gap: 6px;
+        font-size: 0.85rem;
+      }
+
+      .dot {
+        width: 14px;
+        height: 14px;
+      }
+
+      .score {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+      }
+
+      .timer-row {
+        font-size: 0.72rem;
+        margin-bottom: 4px;
+      }
+
+      .bar {
+        height: 6px;
+      }
+
+      .effects {
+        min-height: 22px;
+        gap: 4px;
+        margin-top: 6px;
+      }
+
+      .eff {
+        font-size: 0.64rem;
+        padding: 3px 6px;
+      }
+
+      .draw-btn {
+        margin-top: 6px;
+        padding: 8px 9px;
+        border-radius: 10px;
+        font-size: 0.76rem;
+      }
+
+      .btn-secondary {
+        padding: 9px 10px;
+        margin-top: 6px;
+        border-radius: 11px;
+        font-size: 0.78rem;
+      }
+
+      .hand-title {
+        font-size: 0.72rem;
       }
 
       .hand {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 7px;
+        gap: 6px;
+        min-height: 0;
       }
 
       .card {
-        min-height: 56px;
-        padding: 7px 8px;
+        min-height: 50px;
+        padding: 6px 7px;
+        border-radius: 11px;
+      }
+
+      .card::before {
+        width: 3px;
       }
 
       .c-name {
-        font-size: 0.78rem;
+        font-size: 0.72rem;
+        margin-bottom: 2px;
+      }
+
+      .rarity {
+        font-size: 0.55rem;
       }
 
       .desc {
-        font-size: 0.66rem;
-        line-height: 1.22;
+        font-size: 0.60rem;
+        line-height: 1.18;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }
 
       .use {
         display: none;
       }
 
-      #board-wrap {
-        width: min(94vw, 520px);
+      #side-black .hand,
+      #side-white .hand {
+        max-height: 126px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #side-black.is-me,
+      #side-white.is-me {
+        order: 2;
+      }
+
+      #side-black.is-opponent,
+      #side-white.is-opponent {
+        order: 3;
+      }
+
+      .side.is-opponent {
+        max-height: 128px;
+      }
+
+      .side.is-opponent .player {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .side.is-opponent .p-top {
+        margin-bottom: 0;
+      }
+
+      .side.is-opponent .timer-row,
+      .side.is-opponent .bar,
+      .side.is-opponent .effects,
+      .side.is-opponent .draw-btn,
+      .side.is-opponent .btn-secondary {
+        display: none !important;
+      }
+
+      .side.is-opponent .hand-title {
+        margin-top: -2px;
+      }
+
+      .side.is-opponent .hand {
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: 62px;
+        padding-bottom: 2px;
+        scroll-snap-type: x proximity;
+      }
+
+      .side.is-opponent .card {
+        min-width: 128px;
+        max-width: 128px;
+        min-height: 50px;
+        scroll-snap-align: start;
+      }
+
+      #count-num {
+        font-size: 4rem;
+      }
+
+      #modal h2 {
+        font-size: 1.55rem;
+      }
+
+      .modal-actions button {
+        padding: 12px;
       }
 
       .card-config-grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 380px) {
+      #board-wrap {
+        width: min(96vw, 49dvh);
+      }
+
+      .card {
+        min-height: 46px;
+      }
+
+      .desc {
+        font-size: 0.56rem;
+      }
+
+      .c-name {
+        font-size: 0.68rem;
+      }
+
+      .side.is-opponent {
+        max-height: 116px;
       }
     }
   </style>
@@ -1961,6 +2191,7 @@ function renderBoard() {
 }
 
 function renderPlayers() {
+  updateMobileSideClasses();
   const ct = count();
   el("score-0").textContent = ct.black;
   el("score-1").textContent = ct.white;
@@ -1999,6 +2230,25 @@ function renderPlayers() {
       s.textContent = x;
       eff.appendChild(s);
     });
+  }
+}
+
+function updateMobileSideClasses() {
+  const mi = myIndex();
+  const black = el("side-black");
+  const white = el("side-white");
+  black.classList.remove("is-me", "is-opponent");
+  white.classList.remove("is-me", "is-opponent");
+
+  if (mi === 0) {
+    black.classList.add("is-me");
+    white.classList.add("is-opponent");
+  } else if (mi === 1) {
+    white.classList.add("is-me");
+    black.classList.add("is-opponent");
+  } else {
+    black.classList.add("is-me");
+    white.classList.add("is-opponent");
   }
 }
 
@@ -2371,7 +2621,8 @@ function makeKifu() {
   lines.push("--------------------");
   lines.push(boardText());
 
-  return lines.join("\n");
+  return lines.join("
+");
 }
 
 function boardText() {
@@ -2383,7 +2634,8 @@ function boardText() {
     }
     lines.push(`${r + 1} ${row.join(" ")}`);
   }
-  return lines.join("\n");
+  return lines.join("
+");
 }
 
 function formatTime(t) {

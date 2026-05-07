@@ -1,0 +1,2397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Skill Othello Duel</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    :root {
+      --bg: #08080b;
+      --bg2: #11111a;
+      --panel: #17171d;
+      --panel2: #22222b;
+      --panel3: #2b2b35;
+      --line: #383844;
+      --text: #f5f5f7;
+      --muted: #9b9ba3;
+      --blue: #0a84ff;
+      --cyan: #64d2ff;
+      --red: #ff453a;
+      --orange: #ff9f0a;
+      --yellow: #ffd60a;
+      --purple: #bf5af2;
+      --green: #176b3a;
+      --green2: #0f4c2a;
+      --black-stone: #08080a;
+      --white-stone: #f4f4f6;
+      --shadow: rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at top, #18182b 0%, var(--bg) 58%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    button, input, select {
+      font-family: inherit;
+    }
+
+    button {
+      border: 0;
+      outline: 0;
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .view {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    #login-view,
+    #setup-view {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box {
+      width: min(94vw, 520px);
+      background: rgba(23, 23, 29, 0.95);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px 18px;
+      text-align: center;
+      box-shadow: 0 20px 70px var(--shadow);
+    }
+
+    .box h1,
+    .box h2 {
+      margin: 0 0 10px;
+      line-height: 1.15;
+    }
+
+    .box h1 {
+      font-size: 1.75rem;
+      letter-spacing: 0.3px;
+    }
+
+    .box h2 {
+      font-size: 1.45rem;
+    }
+
+    .box p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    .box input,
+    .box select {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--panel2);
+      color: var(--text);
+      text-align: center;
+      font-size: 1rem;
+      outline: 0;
+    }
+
+    .box input:focus,
+    .box select:focus {
+      border-color: var(--blue);
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 15px;
+      font-weight: 850;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--blue), #0066cc);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      background: var(--panel2);
+      border: 1px solid var(--line);
+    }
+
+    .btn-danger {
+      color: #ffd3cf;
+      background: rgba(255, 69, 58, 0.14);
+      border: 1px solid rgba(255, 69, 58, 0.35);
+    }
+
+    .note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .setup-section {
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      text-align: left;
+    }
+
+    .setup-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-weight: 900;
+      font-size: 0.92rem;
+      margin-bottom: 10px;
+    }
+
+    .setup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .tiny-btn {
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 850;
+    }
+
+    .card-config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .card-config {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 13px;
+      padding: 8px;
+      background: rgba(255,255,255,0.04);
+      cursor: pointer;
+    }
+
+    .card-config input {
+      width: auto;
+      margin: 2px 0 0;
+      accent-color: var(--blue);
+    }
+
+    .card-config-name {
+      font-weight: 900;
+      font-size: 0.82rem;
+    }
+
+    .card-config-desc {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.68rem;
+      line-height: 1.25;
+    }
+
+    #game-view {
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game {
+      width: min(100%, 1140px);
+      display: grid;
+      grid-template-columns: 285px minmax(320px, 510px) 285px;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .side {
+      background: rgba(23, 23, 29, 0.94);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 14px;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+
+    .player {
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .player.active {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(100,210,255,0.14), 0 0 28px rgba(10,132,255,0.12);
+    }
+
+    .p-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .p-name {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      min-width: 0;
+      font-weight: 900;
+    }
+
+    .p-name span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+
+    .dot.black {
+      background: radial-gradient(circle at 32% 28%, #555, var(--black-stone) 64%);
+      border: 1px solid #333;
+    }
+
+    .dot.white {
+      background: radial-gradient(circle at 32% 28%, #fff, var(--white-stone) 65%);
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+
+    .score {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-row {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 6px;
+    }
+
+    .timer-text {
+      color: var(--text);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar {
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+    }
+
+    .bar-fill.low {
+      background: linear-gradient(90deg, var(--red), var(--orange));
+    }
+
+    .effects {
+      min-height: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .eff {
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(10,132,255,0.14);
+      border: 1px solid rgba(10,132,255,0.35);
+      color: #dcecff;
+      font-weight: 800;
+    }
+
+    .eff.none {
+      opacity: 0.45;
+    }
+
+    .draw-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 13px;
+      background: rgba(10,132,255,0.16);
+      border: 1px solid rgba(100,210,255,0.38);
+      color: #dcecff;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .hand-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-weight: 850;
+      font-size: 0.82rem;
+    }
+
+    .hand {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+    }
+
+    .card {
+      text-align: left;
+      min-height: 60px;
+      color: var(--text);
+      background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 8px 9px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--cyan);
+    }
+
+    .card.rare::before {
+      background: var(--yellow);
+    }
+
+    .card.epic::before {
+      background: var(--purple);
+    }
+
+    .card.usable {
+      border-color: rgba(100,210,255,0.68);
+      box-shadow: 0 0 0 1px rgba(100,210,255,0.16);
+    }
+
+    .c-name {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 950;
+      font-size: 0.84rem;
+      margin-bottom: 3px;
+    }
+
+    .rarity {
+      color: var(--muted);
+      font-size: 0.68rem;
+      flex: 0 0 auto;
+    }
+
+    .desc {
+      color: #c9c9cf;
+      font-size: 0.70rem;
+      line-height: 1.25;
+    }
+
+    .use {
+      margin-top: 4px;
+      color: var(--cyan);
+      font-size: 0.68rem;
+      font-weight: 900;
+    }
+
+    .center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .badge,
+    .mini {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(23,23,29,0.94);
+      color: #d1d1d6;
+      font-size: 0.82rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .mini {
+      color: var(--cyan);
+    }
+
+    #status {
+      width: 100%;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.35;
+      padding: 10px 14px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(23,23,29,0.94);
+      color: #d1d1d6;
+      font-weight: 850;
+    }
+
+    #host-controls {
+      width: 100%;
+      display: none;
+    }
+
+    #board-wrap {
+      width: min(94vw, 500px, 70vh);
+      aspect-ratio: 1/1;
+      position: relative;
+    }
+
+    #board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      gap: 2px;
+      background: #08180e;
+      border: 3px solid #070709;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 22px 60px rgba(0,0,0,0.45);
+    }
+
+    .cell {
+      position: relative;
+      background: radial-gradient(circle at 30% 30%, var(--green), var(--green2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .cell.valid::after {
+      content: "";
+      position: absolute;
+      width: 16%;
+      height: 16%;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.28);
+      z-index: 1;
+    }
+
+    .cell.target {
+      box-shadow: inset 0 0 0 3px rgba(255,214,10,0.80);
+    }
+
+    .cell.target::after {
+      content: "";
+      position: absolute;
+      width: 40%;
+      height: 40%;
+      border-radius: 50%;
+      background: rgba(255,214,10,0.28);
+      z-index: 2;
+    }
+
+    .cell.fog::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(35,35,42,0.98), rgba(0,0,0,0.96));
+      z-index: 8;
+    }
+
+    .stone {
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      position: relative;
+      z-index: 4;
+      pointer-events: none;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.52), inset 0 -3px 5px rgba(0,0,0,0.22);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .stone.empty {
+      opacity: 0;
+      transform: scale(0.1);
+    }
+
+    .stone.black {
+      opacity: 1;
+      transform: scale(1);
+      background: radial-gradient(circle at 32% 28%, #55555c, #101014 62%, #020203);
+    }
+
+    .stone.white {
+      opacity: 1;
+      transform: scale(1);
+      background: radial-gradient(circle at 32% 28%, #fff, #d7d7de 65%, #b8b8c2);
+    }
+
+    #countdown,
+    #modal {
+      position: absolute;
+      inset: -2px;
+      border-radius: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      z-index: 30;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+      padding: 18px;
+    }
+
+    #count-num {
+      font-size: 5rem;
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    #modal h2 {
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    #result-score {
+      margin: 0 0 18px;
+      color: #d1d1d6;
+      font-weight: 850;
+    }
+
+    .modal-actions {
+      width: min(280px, 92%);
+      display: grid;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 999px;
+      font-weight: 900;
+    }
+
+    #copy-kifu {
+      color: white;
+      background: var(--blue);
+    }
+
+    #reset {
+      color: black;
+      background: var(--text);
+    }
+
+    #toast {
+      position: fixed;
+      left: 50%;
+      top: max(18px, env(safe-area-inset-top));
+      transform: translateX(-50%) translateY(-12px) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 200;
+      max-width: 94vw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 11px 18px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(36,36,42,0.96);
+      color: white;
+      font-weight: 850;
+      box-shadow: 0 12px 34px rgba(0,0,0,0.35);
+      transition: 0.22s;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    @media (max-width: 920px) {
+      body {
+        overflow: auto;
+      }
+
+      #game-view {
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
+
+      #game {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding-bottom: 20px;
+      }
+
+      .center {
+        order: 1;
+      }
+
+      #side-black {
+        order: 2;
+      }
+
+      #side-white {
+        order: 3;
+      }
+
+      .side {
+        min-height: auto;
+      }
+
+      .hand {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+      }
+
+      .card {
+        min-height: 56px;
+        padding: 7px 8px;
+      }
+
+      .c-name {
+        font-size: 0.78rem;
+      }
+
+      .desc {
+        font-size: 0.66rem;
+        line-height: 1.22;
+      }
+
+      .use {
+        display: none;
+      }
+
+      #board-wrap {
+        width: min(94vw, 520px);
+      }
+
+      .card-config-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="login-view" class="view active">
+  <div class="box">
+    <h1>Skill Othello Duel</h1>
+    <p>2人対戦・公開手札・スキルカードありのオセロです。</p>
+    <input id="name-input" type="text" maxlength="10" placeholder="名前 (10文字以内)" autocomplete="off">
+    <button class="btn-primary" onclick="enterAsHost()">ホストとして入る</button>
+    <button class="btn-secondary" onclick="enterAsGuest()">参加者として入る</button>
+    <div id="room-note" class="note">URLの r と key で部屋を指定します。</div>
+  </div>
+</div>
+
+<div id="setup-view" class="view">
+  <div class="box">
+    <h2>ルール設定</h2>
+    <p id="setup-label">ホストとして設定してください。</p>
+
+    <select id="turn-time">
+      <option value="20000">制限時間 20秒/手</option>
+      <option value="30000" selected>制限時間 30秒/手</option>
+      <option value="45000">制限時間 45秒/手</option>
+      <option value="60000">制限時間 60秒/手</option>
+    </select>
+
+    <select id="timeout-mode">
+      <option value="pass" selected>時間切れ: 自動パス</option>
+      <option value="random">時間切れ: ランダム合法手</option>
+    </select>
+
+    <div class="setup-section">
+      <div class="setup-title">
+        <span>使用するカード</span>
+        <span id="selected-card-count">0種類</span>
+      </div>
+      <div class="setup-actions">
+        <button class="tiny-btn" onclick="selectAllCards()">全部使う</button>
+        <button class="tiny-btn" onclick="selectBasicCards()">基本セット</button>
+      </div>
+      <div id="card-config-grid" class="card-config-grid"></div>
+      <div class="note">最低3種類選んでください。選ばれたカードだけで山札を作ります。</div>
+    </div>
+
+    <button class="btn-primary" onclick="applyConfig()">このルールで待機画面へ</button>
+    <div class="note">初期3枚。手札上限4枚。各手番で「カードを1枚引く」か「スキルを1枚使う」のどちらか1回だけできます。</div>
+  </div>
+</div>
+
+<div id="game-view" class="view">
+  <div id="game">
+    <aside id="side-black" class="side">
+      <div id="player-0" class="player">
+        <div class="p-top">
+          <div class="p-name"><div class="dot black"></div><span id="name-0">黒: 空席</span></div>
+          <div id="score-0" class="score">2</div>
+        </div>
+        <div class="timer-row"><span>残り時間</span><span id="timer-0" class="timer-text">--</span></div>
+        <div class="bar"><div id="bar-0" class="bar-fill"></div></div>
+        <div id="effects-0" class="effects"></div>
+        <button id="draw-0" class="draw-btn" onclick="requestDraw(0)">カードを1枚引く</button>
+        <button id="seat-0" class="btn-secondary" onclick="takeSeat(0)">黒で着席</button>
+      </div>
+      <div class="hand-title"><span>黒の公開手札</span><span id="hand-count-0">0枚</span></div>
+      <div id="hand-0" class="hand"></div>
+    </aside>
+
+    <main class="center">
+      <div class="topbar">
+        <span id="room-badge" class="badge">同期中...</span>
+        <button class="mini" onclick="copyShareUrl()">🔗 招待URL</button>
+      </div>
+      <div id="status">同期中...</div>
+      <div id="host-controls"><button id="start-btn" class="btn-primary" onclick="startGameByHost()">ゲーム開始</button></div>
+      <div id="board-wrap">
+        <div id="board"></div>
+        <div id="countdown"><div id="count-num">3</div><div class="note">Starting...</div></div>
+        <div id="modal">
+          <h2 id="result-text"></h2>
+          <p id="result-score"></p>
+          <div class="modal-actions">
+            <button id="copy-kifu" onclick="copyKifu()">棋譜をコピー</button>
+            <button id="reset" onclick="requestReset()">もう一度遊ぶ</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside id="side-white" class="side">
+      <div id="player-1" class="player">
+        <div class="p-top">
+          <div class="p-name"><div class="dot white"></div><span id="name-1">白: 空席</span></div>
+          <div id="score-1" class="score">2</div>
+        </div>
+        <div class="timer-row"><span>残り時間</span><span id="timer-1" class="timer-text">--</span></div>
+        <div class="bar"><div id="bar-1" class="bar-fill"></div></div>
+        <div id="effects-1" class="effects"></div>
+        <button id="draw-1" class="draw-btn" onclick="requestDraw(1)">カードを1枚引く</button>
+        <button id="seat-1" class="btn-secondary" onclick="takeSeat(1)">白で着席</button>
+      </div>
+      <div class="hand-title"><span>白の公開手札</span><span id="hand-count-1">0枚</span></div>
+      <div id="hand-1" class="hand"></div>
+    </aside>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const urlParams = new URLSearchParams(location.search);
+const rId = urlParams.get("r") || "";
+const rKey = urlParams.get("key") || "";
+
+const S = 8;
+const INITIAL_HAND = 3;
+const MAX_HAND = 4;
+const COUNTDOWN_MS = 3000;
+const BROKER = "wss://broker.emqx.io:8084/mqtt";
+
+let uid = localStorage.getItem("skill_othello_uid");
+if (!uid) {
+  uid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  localStorage.setItem("skill_othello_uid", uid);
+}
+
+let myName = localStorage.getItem("skill_othello_name") || "";
+document.getElementById("name-input").value = myName;
+
+const CARD_DEFS = {
+  time_cut: {
+    id: "time_cut",
+    name: "Time Cut",
+    rarity: "common",
+    target: "none",
+    copies: 3,
+    desc: "相手の次の制限時間を10秒短くする。"
+  },
+  quick_draw: {
+    id: "quick_draw",
+    name: "Quick Draw",
+    rarity: "common",
+    target: "none",
+    copies: 3,
+    desc: "自分の現在手番の残り時間を10秒増やす。"
+  },
+  shield: {
+    id: "shield",
+    name: "Shield",
+    rarity: "common",
+    target: "none",
+    copies: 3,
+    desc: "次に受ける妨害を1回無効化する。"
+  },
+  pressure: {
+    id: "pressure",
+    name: "Pressure",
+    rarity: "common",
+    target: "none",
+    copies: 2,
+    desc: "相手は次の1手番でスキルを使えない。"
+  },
+  draw_two: {
+    id: "draw_two",
+    name: "Draw Two",
+    rarity: "common",
+    target: "none",
+    copies: 2,
+    desc: "2枚引く。手札上限は4枚。"
+  },
+  reroll: {
+    id: "reroll",
+    name: "Reroll",
+    rarity: "common",
+    target: "none",
+    copies: 2,
+    desc: "このカード以外の手札をすべて引き直す。"
+  },
+  conversion: {
+    id: "conversion",
+    name: "Conversion",
+    rarity: "rare",
+    target: "opp_stone",
+    copies: 2,
+    desc: "角以外の相手石1個を自分色に変える。"
+  },
+  erase: {
+    id: "erase",
+    name: "Erase",
+    rarity: "rare",
+    target: "opp_stone",
+    copies: 2,
+    desc: "角以外の相手石1個を消す。"
+  },
+  fog: {
+    id: "fog",
+    name: "Fog",
+    rarity: "rare",
+    target: "fog",
+    copies: 2,
+    desc: "相手の次手番だけ3×3領域を隠す。"
+  }
+};
+
+const ALL_CARD_IDS = Object.keys(CARD_DEFS);
+const BASIC_CARD_IDS = ["time_cut", "quick_draw", "shield", "pressure", "conversion", "erase", "fog"];
+
+let client = null;
+let mqttReady = false;
+let pendingPublishes = [];
+let topic = "";
+let isHost = false;
+let hostId = null;
+let hostName = "";
+let seq = 0;
+let latestSeq = 0;
+let seenMsgIds = new Set();
+let timerLoop = null;
+let countdownLoop = null;
+let hostTurnTimer = null;
+let hostStartTimer = null;
+let timeOffset = 0;
+
+let config = {
+  baseTurnTime: 30000,
+  timeoutMode: "pass",
+  enabledCards: ALL_CARD_IDS.slice()
+};
+
+let state = "init";
+let board = [];
+let players = [newPlayer(1), newPlayer(2)];
+let deck = [];
+let discard = [];
+let turn = 0;
+let turnNo = 0;
+let turnStartedAt = 0;
+let turnEndsAt = 0;
+let turnDuration = 0;
+let usedExtraAction = false;
+let pendingCard = null;
+let history = [];
+let moveNo = 0;
+let gameStartedAt = null;
+let gameFinishedAt = null;
+
+const el = id => document.getElementById(id);
+
+window.addEventListener("load", () => {
+  el("room-note").textContent = rId && rKey ? `Room ID: ${rId}` : "URLに ?r=部屋ID&key=合言葉 を付けてください。";
+  initBoardDom();
+  initCardConfigUI();
+  initEmptyBoard();
+  render();
+});
+
+function newPlayer(color) {
+  return {
+    id: null,
+    name: "",
+    color,
+    hand: [],
+    effects: {
+      shield: 0,
+      pressure: 0,
+      timePenalty: 0,
+      fog: null
+    }
+  };
+}
+
+function cleanName(s) {
+  return String(s || "").trim().replace(/[<>]/g, "").slice(0, 10);
+}
+
+function esc(s) {
+  return String(s || "").replace(/[&<>'"]/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    "\"": "&quot;"
+  }[ch]));
+}
+
+function msgId() {
+  return uid + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function cardInstance(id) {
+  return {
+    iid: "card_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8),
+    id
+  };
+}
+
+function switchView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  el(id).classList.add("active");
+}
+
+function toast(s) {
+  el("toast").textContent = s;
+  el("toast").classList.add("show");
+  setTimeout(() => el("toast").classList.remove("show"), 2200);
+}
+
+function validRoom() {
+  if (!rId || !rKey) {
+    toast("URLに r と key が必要です");
+    return false;
+  }
+  return true;
+}
+
+function initCardConfigUI() {
+  const grid = el("card-config-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  ALL_CARD_IDS.forEach(id => {
+    const def = CARD_DEFS[id];
+    const label = document.createElement("label");
+    label.className = "card-config";
+    label.innerHTML = `
+      <input type="checkbox" class="card-check" value="${esc(id)}" checked onchange="updateSelectedCardCount()">
+      <div>
+        <div class="card-config-name">${esc(def.name)} <span class="rarity">${esc(def.rarity.toUpperCase())}</span></div>
+        <div class="card-config-desc">${esc(def.desc)}</div>
+      </div>
+    `;
+    grid.appendChild(label);
+  });
+
+  updateSelectedCardCount();
+}
+
+function updateSelectedCardCount() {
+  const n = getSelectedCardIdsFromSetup().length;
+  const t = el("selected-card-count");
+  if (t) t.textContent = `${n}種類`;
+}
+
+function getSelectedCardIdsFromSetup() {
+  return Array.from(document.querySelectorAll(".card-check"))
+    .filter(x => x.checked)
+    .map(x => x.value)
+    .filter(id => CARD_DEFS[id]);
+}
+
+function setSelectedCards(ids) {
+  const set = new Set(ids);
+  document.querySelectorAll(".card-check").forEach(x => {
+    x.checked = set.has(x.value);
+  });
+  updateSelectedCardCount();
+}
+
+function selectAllCards() {
+  setSelectedCards(ALL_CARD_IDS);
+}
+
+function selectBasicCards() {
+  setSelectedCards(BASIC_CARD_IDS);
+}
+
+function connect() {
+  if (client) return;
+  topic = `skill-othello-duel/${rId}/${rKey}`;
+
+  client = mqtt.connect(BROKER, {
+    clean: true,
+    reconnectPeriod: 1000,
+    connectTimeout: 6000
+  });
+
+  client.on("connect", () => {
+    mqttReady = true;
+    client.subscribe(topic);
+    flushPendingPublishes();
+
+    if (isHost) {
+      publish({ t: "host", hostId: uid, hostName: myName });
+      publishSnapshot(null);
+    } else {
+      publish({ t: "hello", from: uid });
+    }
+  });
+
+  client.on("close", () => {
+    mqttReady = false;
+  });
+
+  client.on("reconnect", () => {
+    mqttReady = false;
+    el("status").textContent = "再接続中...";
+  });
+
+  client.on("error", () => {
+    toast("通信に問題があります");
+  });
+
+  client.on("message", (_, m) => {
+    let d;
+    try {
+      d = JSON.parse(m.toString());
+    } catch {
+      return;
+    }
+    onMessage(d);
+  });
+}
+
+function publish(obj) {
+  const m = { ...obj, msgId: obj.msgId || msgId() };
+  if (mqttReady && client) {
+    client.publish(topic, JSON.stringify(m));
+  } else {
+    pendingPublishes.push(m);
+  }
+}
+
+function flushPendingPublishes() {
+  if (!mqttReady || !client) return;
+  while (pendingPublishes.length) {
+    client.publish(topic, JSON.stringify(pendingPublishes.shift()));
+  }
+}
+
+function alreadySeen(msgId) {
+  if (!msgId) return false;
+  if (seenMsgIds.has(msgId)) return true;
+  seenMsgIds.add(msgId);
+  if (seenMsgIds.size > 600) {
+    seenMsgIds = new Set(Array.from(seenMsgIds).slice(-300));
+  }
+  return false;
+}
+
+function enterAsHost() {
+  const n = cleanName(el("name-input").value);
+  if (!n) return toast("名前を入力してください");
+  if (!validRoom()) return;
+
+  myName = n;
+  localStorage.setItem("skill_othello_name", myName);
+  isHost = true;
+  hostId = uid;
+  hostName = myName;
+  el("setup-label").textContent = `${myName} さんがホストです`;
+  connect();
+  switchView("setup-view");
+}
+
+function enterAsGuest() {
+  const n = cleanName(el("name-input").value);
+  if (!n) return toast("名前を入力してください");
+  if (!validRoom()) return;
+
+  myName = n;
+  localStorage.setItem("skill_othello_name", myName);
+  isHost = false;
+  connect();
+  switchView("game-view");
+  el("status").textContent = "部屋の状態を確認しています...";
+}
+
+function onMessage(d) {
+  if (!d || typeof d !== "object") return;
+
+  if (d.t === "host") {
+    if (!hostId) {
+      hostId = d.hostId;
+      hostName = cleanName(d.hostName) || "Host";
+    }
+    return;
+  }
+
+  if (d.t === "hello") {
+    if (isHost) publishSnapshot(d.from || null);
+    return;
+  }
+
+  if (d.t === "snapshot") {
+    if (d.to && d.to !== uid) return;
+    if (isHost && d.hostId === uid) return;
+    if (hostId && d.hostId !== hostId) return;
+    if (typeof d.seq === "number" && d.seq < latestSeq) return;
+
+    latestSeq = d.seq || latestSeq;
+    applySnapshot(d);
+    return;
+  }
+
+  if (!isHost) return;
+  if (alreadySeen(d.msgId)) return;
+
+  if (d.t === "seat") hostSeat(d);
+  else if (d.t === "move") hostMove(d);
+  else if (d.t === "draw") hostDraw(d);
+  else if (d.t === "card") hostCard(d);
+  else if (d.t === "target") hostTarget(d);
+  else if (d.t === "reset") hostReset(d);
+}
+
+function applyConfig() {
+  if (!isHost) return toast("ホストのみ設定できます");
+
+  const enabledCards = getSelectedCardIdsFromSetup();
+  if (enabledCards.length < 3) {
+    toast("カードは最低3種類選んでください");
+    return;
+  }
+
+  config = {
+    baseTurnTime: Number(el("turn-time").value) || 30000,
+    timeoutMode: el("timeout-mode").value === "random" ? "random" : "pass",
+    enabledCards
+  };
+
+  initGame();
+  state = "waiting";
+  switchView("game-view");
+  commit();
+}
+
+function initEmptyBoard() {
+  board = Array.from({ length: S }, () => Array(S).fill(0));
+  board[3][3] = 2;
+  board[4][4] = 2;
+  board[3][4] = 1;
+  board[4][3] = 1;
+}
+
+function initGame() {
+  initEmptyBoard();
+  players = [newPlayer(1), newPlayer(2)];
+  deck = [];
+  discard = [];
+  turn = 0;
+  turnNo = 0;
+  turnStartedAt = 0;
+  turnEndsAt = 0;
+  turnDuration = 0;
+  usedExtraAction = false;
+  pendingCard = null;
+  history = [];
+  moveNo = 0;
+  gameStartedAt = null;
+  gameFinishedAt = null;
+
+  if (hostTurnTimer) clearTimeout(hostTurnTimer);
+  if (hostStartTimer) clearTimeout(hostStartTimer);
+}
+
+function snapshot(to) {
+  return {
+    t: "snapshot",
+    to,
+    seq: ++seq,
+    hostId: uid,
+    hostName: myName,
+    serverTime: Date.now(),
+    config,
+    state,
+    board,
+    players,
+    turn,
+    turnNo,
+    turnStartedAt,
+    turnEndsAt,
+    turnDuration,
+    usedExtraAction,
+    pendingCard,
+    history,
+    moveNo,
+    gameStartedAt,
+    gameFinishedAt,
+    deckCount: deck.length,
+    discardCount: discard.length
+  };
+}
+
+function publishSnapshot(to) {
+  if (!isHost) return;
+  publish(snapshot(to));
+}
+
+function commit() {
+  render();
+  publishSnapshot(null);
+}
+
+function applySnapshot(d) {
+  hostId = d.hostId;
+  hostName = cleanName(d.hostName) || "Host";
+  if (typeof d.serverTime === "number") timeOffset = d.serverTime - Date.now();
+
+  config = sanitizeConfig(d.config);
+  state = d.state || "init";
+  board = sanitizeBoard(d.board);
+  players = sanitizePlayers(d.players);
+  turn = Number.isInteger(d.turn) ? d.turn : 0;
+  turnNo = Number.isInteger(d.turnNo) ? d.turnNo : 0;
+  turnStartedAt = Number(d.turnStartedAt) || 0;
+  turnEndsAt = Number(d.turnEndsAt) || 0;
+  turnDuration = Number(d.turnDuration) || 0;
+  usedExtraAction = !!d.usedExtraAction;
+  pendingCard = sanitizePendingCard(d.pendingCard);
+  history = Array.isArray(d.history) ? d.history : [];
+  moveNo = Number.isInteger(d.moveNo) ? d.moveNo : 0;
+  gameStartedAt = Number(d.gameStartedAt) || null;
+  gameFinishedAt = Number(d.gameFinishedAt) || null;
+
+  render();
+}
+
+function sanitizeConfig(c) {
+  const baseTurnTime = [20000, 30000, 45000, 60000].includes(Number(c && c.baseTurnTime)) ? Number(c.baseTurnTime) : 30000;
+  const timeoutMode = c && c.timeoutMode === "random" ? "random" : "pass";
+  let enabledCards = Array.isArray(c && c.enabledCards) ? c.enabledCards.filter(id => CARD_DEFS[id]) : ALL_CARD_IDS.slice();
+  if (enabledCards.length < 3) enabledCards = ALL_CARD_IDS.slice();
+  return { baseTurnTime, timeoutMode, enabledCards };
+}
+
+function sanitizeBoard(b) {
+  if (!Array.isArray(b) || b.length !== S) {
+    const nb = Array.from({ length: S }, () => Array(S).fill(0));
+    nb[3][3] = 2;
+    nb[4][4] = 2;
+    nb[3][4] = 1;
+    nb[4][3] = 1;
+    return nb;
+  }
+
+  return b.map(row => {
+    const out = Array(S).fill(0);
+    if (Array.isArray(row)) {
+      for (let i = 0; i < S; i++) out[i] = row[i] === 1 || row[i] === 2 ? row[i] : 0;
+    }
+    return out;
+  });
+}
+
+function sanitizePlayers(p) {
+  const out = [newPlayer(1), newPlayer(2)];
+  if (!Array.isArray(p)) return out;
+
+  for (let i = 0; i < 2; i++) {
+    if (!p[i]) continue;
+    out[i] = {
+      id: p[i].id ? String(p[i].id) : null,
+      name: cleanName(p[i].name),
+      color: i + 1,
+      hand: Array.isArray(p[i].hand) ? p[i].hand.filter(isValidCardInstance).slice(0, MAX_HAND) : [],
+      effects: sanitizeEffects(p[i].effects)
+    };
+  }
+
+  return out;
+}
+
+function isValidCardInstance(card) {
+  return card && typeof card.iid === "string" && CARD_DEFS[card.id];
+}
+
+function sanitizeEffects(e) {
+  return {
+    shield: Math.max(0, Number(e && e.shield) || 0),
+    pressure: Math.max(0, Number(e && e.pressure) || 0),
+    timePenalty: Math.max(0, Number(e && e.timePenalty) || 0),
+    fog: isValidFog(e && e.fog) ? { r: e.fog.r, c: e.fog.c } : null
+  };
+}
+
+function isValidFog(f) {
+  return f && Number.isInteger(f.r) && Number.isInteger(f.c) && f.r >= 0 && f.r <= 5 && f.c >= 0 && f.c <= 5;
+}
+
+function sanitizePendingCard(p) {
+  if (!p || typeof p !== "object") return null;
+  if (!isValidCardInstance(p.card)) return null;
+  if (p.index !== 0 && p.index !== 1) return null;
+  return {
+    playerId: p.playerId ? String(p.playerId) : "",
+    index: p.index,
+    card: p.card
+  };
+}
+
+function takeSeat(i) {
+  if (state !== "waiting") return toast("今は着席できません");
+  if (myIndex() !== -1) return toast("すでに着席しています");
+  if (players[i].id) return toast("その席は埋まっています");
+
+  publish({
+    t: "seat",
+    from: uid,
+    name: myName,
+    index: i
+  });
+}
+
+function hostSeat(d) {
+  if (state !== "waiting") return;
+  const i = Number(d.index);
+  if (i !== 0 && i !== 1) return;
+  if (players[i].id) return;
+  if (players.some(p => p.id === d.from)) return;
+
+  players[i].id = String(d.from || "");
+  players[i].name = cleanName(d.name) || "Player";
+  commit();
+}
+
+function startGameByHost() {
+  if (!isHost) return;
+  if (state !== "waiting") return;
+  if (!players[0].id || !players[1].id) return toast("2人そろうと開始できます");
+
+  deck = buildDeck(config.enabledCards);
+  discard = [];
+
+  for (let i = 0; i < 2; i++) {
+    players[i].hand = [];
+    players[i].effects = { shield: 0, pressure: 0, timePenalty: 0, fog: null };
+    for (let k = 0; k < INITIAL_HAND; k++) draw(i);
+  }
+
+  state = "countdown";
+  gameStartedAt = Date.now() + COUNTDOWN_MS;
+  commit();
+
+  if (hostStartTimer) clearTimeout(hostStartTimer);
+  hostStartTimer = setTimeout(() => {
+    if (state !== "countdown") return;
+    state = "playing";
+    beginTurn(0);
+    commit();
+  }, COUNTDOWN_MS + 80);
+}
+
+function buildDeck(enabledCards) {
+  const ids = Array.isArray(enabledCards) && enabledCards.length >= 3 ? enabledCards : ALL_CARD_IDS;
+  const pool = [];
+
+  ids.forEach(id => {
+    const def = CARD_DEFS[id];
+    if (!def) return;
+    for (let k = 0; k < def.copies; k++) pool.push(id);
+  });
+
+  return shuffle(pool).map(cardInstance);
+}
+
+function beginTurn(i) {
+  if (state !== "playing") return;
+
+  if (!canMove(1) && !canMove(2)) {
+    finishGame();
+    return;
+  }
+
+  let next = i;
+  if (!canMove(players[next].color)) {
+    addHistory({
+      type: "pass",
+      at: Date.now(),
+      player: players[next].name,
+      color: colorName(players[next].color),
+      reason: "no legal moves"
+    });
+    next = 1 - next;
+    if (!canMove(players[next].color)) {
+      finishGame();
+      return;
+    }
+  }
+
+  turn = next;
+  turnNo++;
+  usedExtraAction = false;
+  pendingCard = null;
+
+  let duration = config.baseTurnTime;
+  if (players[turn].effects.timePenalty > 0) {
+    duration = Math.max(5000, duration - players[turn].effects.timePenalty);
+    players[turn].effects.timePenalty = 0;
+  }
+
+  turnDuration = duration;
+  turnStartedAt = Date.now();
+  turnEndsAt = turnStartedAt + duration;
+
+  if (hostTurnTimer) clearTimeout(hostTurnTimer);
+  hostTurnTimer = setTimeout(onTimeout, duration + 100);
+}
+
+function onTimeout() {
+  if (!isHost || state !== "playing") return;
+  if (Date.now() < turnEndsAt) return;
+
+  const legal = legalMoves(players[turn].color);
+  if (config.timeoutMode === "random" && legal.length) {
+    const m = legal[Math.floor(Math.random() * legal.length)];
+    placeMove(turn, m.r, m.c, "timeout random");
+  } else {
+    addHistory({
+      type: "pass",
+      at: Date.now(),
+      player: players[turn].name,
+      color: colorName(players[turn].color),
+      reason: "timeout"
+    });
+    endTurn();
+  }
+  commit();
+}
+
+function hostMove(d) {
+  if (state !== "playing") return;
+
+  const i = Number(d.index);
+  const r = Number(d.r);
+  const c = Number(d.c);
+
+  if (i !== turn || players[i].id !== d.from) return;
+  if (pendingCard) return;
+  if (!inside(r, c)) return;
+  if (!getFlips(r, c, players[i].color).length) return;
+
+  placeMove(i, r, c, "normal");
+  commit();
+}
+
+function placeMove(i, r, c, reason) {
+  const col = players[i].color;
+  const flips = getFlips(r, c, col);
+  if (!flips.length) return false;
+
+  board[r][c] = col;
+  flips.forEach(f => {
+    board[f.r][f.c] = col;
+  });
+
+  const ct = count();
+  moveNo++;
+  addHistory({
+    type: "move",
+    no: moveNo,
+    at: Date.now(),
+    player: players[i].name,
+    color: colorName(col),
+    coord: coord(r, c),
+    flip: flips.length,
+    black: ct.black,
+    white: ct.white,
+    reason
+  });
+
+  endTurn();
+  return true;
+}
+
+function endTurn() {
+  players[turn].effects.pressure = 0;
+  players[turn].effects.fog = null;
+  pendingCard = null;
+
+  const ct = count();
+  if (ct.empty === 0 || (!canMove(1) && !canMove(2))) {
+    finishGame();
+    return;
+  }
+
+  beginTurn(1 - turn);
+}
+
+function finishGame() {
+  state = "finished";
+  gameFinishedAt = Date.now();
+  pendingCard = null;
+  if (hostTurnTimer) clearTimeout(hostTurnTimer);
+}
+
+function hostDraw(d) {
+  if (state !== "playing") return;
+
+  const i = Number(d.index);
+  if (i !== turn || players[i].id !== d.from) return;
+  if (usedExtraAction || pendingCard) return;
+  if (players[i].hand.length >= MAX_HAND) return;
+
+  const got = draw(i);
+  if (!got) return;
+
+  usedExtraAction = true;
+  addHistory({
+    type: "draw",
+    at: Date.now(),
+    player: players[i].name,
+    detail: "カードを1枚引いた"
+  });
+  commit();
+}
+
+function hostCard(d) {
+  if (state !== "playing") return;
+
+  const i = Number(d.index);
+  if (i !== turn || players[i].id !== d.from) return;
+  if (usedExtraAction || pendingCard) return;
+  if (players[i].effects.pressure > 0) return;
+
+  const hi = players[i].hand.findIndex(c => c.iid === d.cardIid);
+  if (hi < 0) return;
+
+  const card = players[i].hand[hi];
+  const def = CARD_DEFS[card.id];
+  if (!def) return;
+
+  if (def.target !== "none") {
+    pendingCard = {
+      playerId: players[i].id,
+      index: i,
+      card
+    };
+    commit();
+    return;
+  }
+
+  useNoTargetCard(i, hi);
+  commit();
+}
+
+function hostTarget(d) {
+  if (state !== "playing" || !pendingCard) return;
+
+  const i = Number(d.index);
+  const r = Number(d.r);
+  const c = Number(d.c);
+
+  if (i !== turn || pendingCard.index !== i || players[i].id !== d.from) return;
+  if (!inside(r, c)) return;
+
+  const hi = players[i].hand.findIndex(card => card.iid === pendingCard.card.iid);
+  if (hi < 0) {
+    pendingCard = null;
+    commit();
+    return;
+  }
+
+  if (!useTargetCard(i, hi, r, c)) return;
+  commit();
+}
+
+function useNoTargetCard(i, hi) {
+  const card = players[i].hand[hi];
+  const def = CARD_DEFS[card.id];
+  const opp = 1 - i;
+  let detail = "";
+
+  if (card.id === "time_cut") {
+    if (blockByShield(opp)) return consumeBlocked(i, hi, opp, def.name);
+    players[opp].effects.timePenalty += 10000;
+    detail = `${players[opp].name} の次手番 -10秒`;
+  } else if (card.id === "quick_draw") {
+    turnEndsAt += 10000;
+    turnDuration += 10000;
+    detail = "現在手番 +10秒";
+    if (hostTurnTimer) clearTimeout(hostTurnTimer);
+    hostTurnTimer = setTimeout(onTimeout, Math.max(0, turnEndsAt - Date.now()) + 100);
+  } else if (card.id === "shield") {
+    players[i].effects.shield++;
+    detail = "Shield +1";
+  } else if (card.id === "pressure") {
+    if (blockByShield(opp)) return consumeBlocked(i, hi, opp, def.name);
+    players[opp].effects.pressure = 1;
+    detail = `${players[opp].name} は次手番スキル不可`;
+  } else if (card.id === "draw_two") {
+    discard.push(players[i].hand.splice(hi, 1)[0]);
+    const before = players[i].hand.length;
+    draw(i);
+    draw(i);
+    usedExtraAction = true;
+    pendingCard = null;
+    addHistory({
+      type: "card",
+      at: Date.now(),
+      player: players[i].name,
+      card: def.name,
+      detail: `${players[i].hand.length - before}枚ドロー`
+    });
+    return true;
+  } else if (card.id === "reroll") {
+    const used = players[i].hand.splice(hi, 1)[0];
+    if (used) discard.push(used);
+    const n = players[i].hand.length;
+    players[i].hand.forEach(x => discard.push(x));
+    players[i].hand = [];
+    for (let k = 0; k < n; k++) draw(i);
+    usedExtraAction = true;
+    pendingCard = null;
+    addHistory({
+      type: "card",
+      at: Date.now(),
+      player: players[i].name,
+      card: def.name,
+      detail: `${n}枚引き直し`
+    });
+    return true;
+  } else {
+    return false;
+  }
+
+  discard.push(players[i].hand.splice(hi, 1)[0]);
+  usedExtraAction = true;
+  pendingCard = null;
+  addHistory({
+    type: "card",
+    at: Date.now(),
+    player: players[i].name,
+    card: def.name,
+    detail
+  });
+  return true;
+}
+
+function useTargetCard(i, hi, r, c) {
+  const card = players[i].hand[hi];
+  const def = CARD_DEFS[card.id];
+  const opp = 1 - i;
+  let detail = "";
+
+  if (card.id === "conversion") {
+    if (!targetOpponentStone(r, c, players[opp].color)) return false;
+    board[r][c] = players[i].color;
+    detail = `${coord(r, c)} を${colorName(players[i].color)}に変更`;
+  } else if (card.id === "erase") {
+    if (!targetOpponentStone(r, c, players[opp].color)) return false;
+    board[r][c] = 0;
+    detail = `${coord(r, c)} の相手石を消去`;
+  } else if (card.id === "fog") {
+    if (r > 5 || c > 5) return false;
+    if (blockByShield(opp)) return consumeBlocked(i, hi, opp, def.name);
+    players[opp].effects.fog = { r, c };
+    detail = `${players[opp].name} の次手番で ${coord(r, c)}-${coord(r + 2, c + 2)} を隠す`;
+  } else {
+    return false;
+  }
+
+  discard.push(players[i].hand.splice(hi, 1)[0]);
+  usedExtraAction = true;
+  pendingCard = null;
+  const ct = count();
+  addHistory({
+    type: "card",
+    at: Date.now(),
+    player: players[i].name,
+    card: def.name,
+    detail,
+    black: ct.black,
+    white: ct.white
+  });
+  return true;
+}
+
+function blockByShield(i) {
+  if (players[i].effects.shield > 0) {
+    players[i].effects.shield--;
+    return true;
+  }
+  return false;
+}
+
+function consumeBlocked(i, hi, opp, cardName) {
+  discard.push(players[i].hand.splice(hi, 1)[0]);
+  usedExtraAction = true;
+  pendingCard = null;
+  addHistory({
+    type: "card",
+    at: Date.now(),
+    player: players[i].name,
+    card: cardName,
+    detail: `${players[opp].name} のShieldで無効化`
+  });
+  return true;
+}
+
+function hostReset(d) {
+  const requester = String(d.from || "");
+  if (!(requester === uid || players.some(p => p.id === requester))) return;
+
+  const old = players.map(p => ({ id: p.id, name: p.name }));
+  initGame();
+  state = "waiting";
+  players[0].id = old[0].id;
+  players[0].name = old[0].name;
+  players[1].id = old[1].id;
+  players[1].name = old[1].name;
+  commit();
+}
+
+function requestReset() {
+  publish({ t: "reset", from: uid });
+}
+
+function initBoardDom() {
+  const b = el("board");
+  b.innerHTML = "";
+
+  for (let r = 0; r < S; r++) {
+    for (let c = 0; c < S; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.onclick = () => cellClick(r, c);
+
+      const st = document.createElement("div");
+      st.className = "stone empty";
+      cell.appendChild(st);
+      b.appendChild(cell);
+    }
+  }
+}
+
+function cellClick(r, c) {
+  if (state !== "playing") return;
+
+  const mi = myIndex();
+  if (mi < 0) return toast("観戦中です");
+  if (mi !== turn) return toast("あなたの番ではありません");
+
+  if (pendingCard && pendingCard.playerId === uid) {
+    publish({
+      t: "target",
+      from: uid,
+      index: mi,
+      r,
+      c
+    });
+    return;
+  }
+
+  if (!getFlips(r, c, players[mi].color).length) return;
+
+  publish({
+    t: "move",
+    from: uid,
+    index: mi,
+    r,
+    c
+  });
+}
+
+function render() {
+  renderBoard();
+  renderPlayers();
+  renderHands();
+  renderStatus();
+  renderModal();
+  updateTimer();
+  handleCountdown();
+
+  if (!timerLoop) timerLoop = setInterval(updateTimer, 120);
+}
+
+function renderBoard() {
+  if (!el("board").children.length) initBoardDom();
+
+  const mi = myIndex();
+  for (let r = 0; r < S; r++) {
+    for (let c = 0; c < S; c++) {
+      const cell = el("board").children[r * S + c];
+      const st = cell.firstChild;
+      const v = board[r] ? board[r][c] : 0;
+
+      cell.className = "cell";
+      st.className = "stone " + (v === 1 ? "black" : v === 2 ? "white" : "empty");
+
+      if (isFoggedForMe(r, c)) cell.classList.add("fog");
+    }
+  }
+
+  if (state !== "playing" || mi !== turn) return;
+
+  if (pendingCard && pendingCard.playerId === uid) {
+    const id = pendingCard.card.id;
+    for (let r = 0; r < S; r++) {
+      for (let c = 0; c < S; c++) {
+        if (isFoggedForMe(r, c)) continue;
+        if (targetable(id, r, c)) el("board").children[r * S + c].classList.add("target");
+      }
+    }
+  } else {
+    legalMoves(players[mi].color).forEach(m => {
+      if (!isFoggedForMe(m.r, m.c)) el("board").children[m.r * S + m.c].classList.add("valid");
+    });
+  }
+}
+
+function renderPlayers() {
+  const ct = count();
+  el("score-0").textContent = ct.black;
+  el("score-1").textContent = ct.white;
+
+  for (let i = 0; i < 2; i++) {
+    el("name-" + i).textContent = `${i === 0 ? "黒" : "白"}: ${players[i].name || "空席"}`;
+    el("player-" + i).classList.toggle("active", state === "playing" && turn === i);
+
+    const seatBtn = el("seat-" + i);
+    if (players[i].id) {
+      seatBtn.textContent = players[i].id === uid ? "あなたの席" : `${players[i].name} が着席中`;
+      seatBtn.disabled = true;
+    } else {
+      seatBtn.textContent = `${i === 0 ? "黒" : "白"}で着席`;
+      seatBtn.disabled = state !== "waiting" || myIndex() !== -1;
+    }
+
+    const drawBtn = el("draw-" + i);
+    const canDrawNow = canDrawCard(i);
+    drawBtn.style.display = state === "playing" && myIndex() === i ? "block" : "none";
+    drawBtn.disabled = !canDrawNow;
+    drawBtn.textContent = players[i].hand.length >= MAX_HAND ? "手札上限です" : "カードを1枚引く";
+
+    const eff = el("effects-" + i);
+    eff.innerHTML = "";
+    const arr = [];
+    if (players[i].effects.shield) arr.push(`Shield×${players[i].effects.shield}`);
+    if (players[i].effects.pressure) arr.push("Pressure");
+    if (players[i].effects.timePenalty) arr.push(`次-${players[i].effects.timePenalty / 1000}s`);
+    if (players[i].effects.fog) arr.push("Fog 3×3");
+    if (!arr.length) arr.push("効果なし");
+
+    arr.forEach(x => {
+      const s = document.createElement("span");
+      s.className = "eff" + (x === "効果なし" ? " none" : "");
+      s.textContent = x;
+      eff.appendChild(s);
+    });
+  }
+}
+
+function renderHands() {
+  for (let i = 0; i < 2; i++) {
+    el("hand-count-" + i).textContent = `${players[i].hand.length}枚`;
+    const h = el("hand-" + i);
+    h.innerHTML = "";
+
+    if (!players[i].hand.length) {
+      const d = document.createElement("div");
+      d.className = "desc";
+      d.textContent = "手札なし";
+      h.appendChild(d);
+      continue;
+    }
+
+    players[i].hand.forEach(card => {
+      const def = CARD_DEFS[card.id];
+      if (!def) return;
+
+      const usable = canUseCard(i, card.iid);
+      const b = document.createElement("button");
+      b.className = `card ${def.rarity === "rare" ? "rare" : ""} ${def.rarity === "epic" ? "epic" : ""} ${usable ? "usable" : ""}`;
+      b.disabled = !usable;
+      b.onclick = () => {
+        if (!canUseCard(i, card.iid)) return;
+        publish({
+          t: "card",
+          from: uid,
+          index: i,
+          cardIid: card.iid
+        });
+      };
+      b.innerHTML = `
+        <div class="c-name"><span>${esc(def.name)}</span><span class="rarity">${esc(def.rarity.toUpperCase())}</span></div>
+        <div class="desc">${esc(def.desc)}</div>
+        ${usable ? `<div class="use">クリックして使用</div>` : ""}
+      `;
+      h.appendChild(b);
+    });
+  }
+}
+
+function renderStatus() {
+  el("room-badge").textContent = `Room: ${rId || "-"} / ${Math.round(config.baseTurnTime / 1000)}秒 / ${config.enabledCards.length}種`;
+  el("host-controls").style.display = isHost && state === "waiting" ? "block" : "none";
+  el("start-btn").disabled = !(players[0].id && players[1].id);
+  el("start-btn").textContent = players[0].id && players[1].id ? "ゲーム開始" : "2人そろうと開始できます";
+
+  const mi = myIndex();
+
+  if (state === "init") {
+    el("status").textContent = hostName ? `${hostName} が設定中です...` : "ホストの設定を待っています...";
+  } else if (state === "waiting") {
+    el("status").textContent = "黒/白に着席してください。2人そろうと開始できます。";
+  } else if (state === "countdown") {
+    el("status").textContent = "まもなく開始します。";
+  } else if (state === "playing") {
+    if (pendingCard && pendingCard.playerId === uid) {
+      el("status").textContent = `${CARD_DEFS[pendingCard.card.id].name}: 対象マスを選んでください。`;
+    } else if (mi === turn) {
+      if (players[mi].effects.pressure) {
+        el("status").textContent = "あなたの番です。Pressure中なので、引くか石を置いてください。";
+      } else if (usedExtraAction) {
+        el("status").textContent = "追加行動は使用済みです。石を置いてください。";
+      } else {
+        el("status").textContent = "あなたの番です。カードを引くか、スキルを使うか、石を置いてください。";
+      }
+    } else {
+      el("status").textContent = `${players[turn].name || "相手"} の番です。`;
+    }
+  } else if (state === "finished") {
+    el("status").textContent = "ゲーム終了。棋譜をコピーできます。";
+  }
+}
+
+function renderModal() {
+  if (state !== "finished") {
+    el("modal").style.display = "none";
+    return;
+  }
+
+  const ct = count();
+  el("modal").style.display = "flex";
+  el("result-text").textContent = ct.black > ct.white ? "黒の勝利" : ct.white > ct.black ? "白の勝利" : "引き分け";
+  el("result-score").textContent = `黒: ${ct.black} / 白: ${ct.white}`;
+}
+
+function handleCountdown() {
+  if (countdownLoop) {
+    clearInterval(countdownLoop);
+    countdownLoop = null;
+  }
+
+  if (state !== "countdown") {
+    el("countdown").style.display = "none";
+    return;
+  }
+
+  el("countdown").style.display = "flex";
+  const update = () => {
+    const remain = Math.max(0, gameStartedAt - now());
+    el("count-num").textContent = remain <= 0 ? "GO" : String(Math.ceil(remain / 1000));
+  };
+  update();
+  countdownLoop = setInterval(update, 120);
+}
+
+function updateTimer() {
+  for (let i = 0; i < 2; i++) {
+    const txt = el("timer-" + i);
+    const bar = el("bar-" + i);
+    bar.classList.remove("low");
+
+    if (state !== "playing" || turn !== i || !turnDuration) {
+      txt.textContent = "--";
+      bar.style.width = "0%";
+      continue;
+    }
+
+    const rem = Math.max(0, turnEndsAt - now());
+    txt.textContent = (rem / 1000).toFixed(1) + "s";
+    bar.style.width = Math.max(0, Math.min(100, rem / turnDuration * 100)) + "%";
+    if (rem <= 10000) bar.classList.add("low");
+  }
+}
+
+function canUseCard(i, iid) {
+  if (state !== "playing") return false;
+  if (myIndex() !== i || turn !== i) return false;
+  if (usedExtraAction || pendingCard) return false;
+  if (players[i].effects.pressure) return false;
+  return players[i].hand.some(c => c.iid === iid);
+}
+
+function canDrawCard(i) {
+  if (state !== "playing") return false;
+  if (myIndex() !== i || turn !== i) return false;
+  if (usedExtraAction || pendingCard) return false;
+  return players[i].hand.length < MAX_HAND;
+}
+
+function requestDraw(i) {
+  if (!canDrawCard(i)) return;
+  publish({
+    t: "draw",
+    from: uid,
+    index: i
+  });
+}
+
+function targetable(cardId, r, c) {
+  const mi = myIndex();
+  if (mi < 0) return false;
+  const opp = 1 - mi;
+
+  if (cardId === "conversion" || cardId === "erase") {
+    return targetOpponentStone(r, c, players[opp].color);
+  }
+
+  if (cardId === "fog") {
+    return r <= 5 && c <= 5;
+  }
+
+  return false;
+}
+
+function targetOpponentStone(r, c, oppColor) {
+  if (!inside(r, c)) return false;
+  if ((r === 0 || r === 7) && (c === 0 || c === 7)) return false;
+  if ((r === 3 && c === 3) || (r === 3 && c === 4) || (r === 4 && c === 3) || (r === 4 && c === 4)) return false;
+  return board[r][c] === oppColor;
+}
+
+function isFoggedForMe(r, c) {
+  const mi = myIndex();
+  if (mi < 0 || state !== "playing" || turn !== mi) return false;
+  const f = players[mi].effects.fog;
+  if (!f) return false;
+  return r >= f.r && r <= f.r + 2 && c >= f.c && c <= f.c + 2;
+}
+
+function draw(i) {
+  if (players[i].hand.length >= MAX_HAND) return null;
+
+  if (!deck.length && discard.length) {
+    deck = shuffle(discard.splice(0));
+  }
+
+  if (!deck.length) return null;
+
+  const c = deck.pop();
+  players[i].hand.push(c);
+  return c;
+}
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getFlips(r, c, col) {
+  if (!inside(r, c) || board[r][c] !== 0) return [];
+
+  const opp = col === 1 ? 2 : 1;
+  const dirs = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1]
+  ];
+  const res = [];
+
+  for (const [dr, dc] of dirs) {
+    const tmp = [];
+    let nr = r + dr;
+    let nc = c + dc;
+
+    while (inside(nr, nc) && board[nr][nc] === opp) {
+      tmp.push({ r: nr, c: nc });
+      nr += dr;
+      nc += dc;
+    }
+
+    if (inside(nr, nc) && board[nr][nc] === col && tmp.length) {
+      res.push(...tmp);
+    }
+  }
+
+  return res;
+}
+
+function legalMoves(col) {
+  const a = [];
+  for (let r = 0; r < S; r++) {
+    for (let c = 0; c < S; c++) {
+      const f = getFlips(r, c, col);
+      if (f.length) a.push({ r, c, flips: f });
+    }
+  }
+  return a;
+}
+
+function canMove(col) {
+  return legalMoves(col).length > 0;
+}
+
+function inside(r, c) {
+  return Number.isInteger(r) && Number.isInteger(c) && r >= 0 && r < S && c >= 0 && c < S;
+}
+
+function myIndex() {
+  return players.findIndex(p => p.id === uid);
+}
+
+function now() {
+  return Date.now() + timeOffset;
+}
+
+function colorName(c) {
+  return c === 1 ? "黒" : "白";
+}
+
+function coord(r, c) {
+  return "abcdefgh"[c] + String(r + 1);
+}
+
+function count() {
+  let black = 0;
+  let white = 0;
+  let empty = 0;
+
+  board.flat().forEach(v => {
+    if (v === 1) black++;
+    else if (v === 2) white++;
+    else empty++;
+  });
+
+  return { black, white, empty };
+}
+
+function addHistory(x) {
+  history.push(x);
+  if (history.length > 500) history = history.slice(-500);
+}
+
+function copyShareUrl() {
+  copyText(location.origin + location.pathname + `?r=${encodeURIComponent(rId)}&key=${encodeURIComponent(rKey)}`, "招待URLをコピーしました");
+}
+
+function copyKifu() {
+  copyText(makeKifu(), "棋譜をコピーしました");
+}
+
+function copyText(text, ok) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => toast(ok)).catch(() => fallbackCopy(text, ok));
+  } else {
+    fallbackCopy(text, ok);
+  }
+}
+
+function fallbackCopy(text, ok) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+    toast(ok);
+  } catch {
+    toast("コピーに失敗しました");
+  }
+  document.body.removeChild(ta);
+}
+
+function makeKifu() {
+  const ct = count();
+  const result = ct.black > ct.white ? "黒の勝利" : ct.white > ct.black ? "白の勝利" : "引き分け";
+  const lines = [];
+
+  lines.push("Skill Othello Duel 棋譜");
+  lines.push("====================");
+  lines.push(`Room ID: ${rId || "-"}`);
+  lines.push(`Host: ${hostName || "-"}`);
+  lines.push(`Turn Time: ${Math.round(config.baseTurnTime / 1000)}秒`);
+  lines.push(`Timeout: ${config.timeoutMode === "random" ? "ランダム合法手" : "自動パス"}`);
+  lines.push(`Enabled Cards: ${config.enabledCards.map(id => CARD_DEFS[id]?.name || id).join(", ")}`);
+  lines.push(`Started: ${formatTime(gameStartedAt)}`);
+  lines.push(`Finished: ${formatTime(gameFinishedAt)}`);
+  lines.push("");
+
+  lines.push("Players");
+  lines.push("--------------------");
+  lines.push(`黒: ${players[0].name || "-"}`);
+  lines.push(`白: ${players[1].name || "-"}`);
+  lines.push("");
+
+  lines.push("Result");
+  lines.push("--------------------");
+  lines.push(result);
+  lines.push(`黒: ${ct.black}`);
+  lines.push(`白: ${ct.white}`);
+  lines.push("");
+
+  lines.push("Moves / Cards / Draws");
+  lines.push("--------------------");
+  if (!history.length) lines.push("(no history)");
+
+  history.forEach(h => {
+    if (h.type === "move") {
+      lines.push(`${String(h.no).padStart(2, "0")}. ${h.color} ${h.player} ${h.coord} flip ${h.flip} [黒 ${h.black} - 白 ${h.white}]`);
+    } else if (h.type === "card") {
+      lines.push(`    ${h.player} [${h.card}] ${h.detail || ""}`);
+    } else if (h.type === "draw") {
+      lines.push(`    ${h.player} [DRAW] ${h.detail || "カードを1枚引いた"}`);
+    } else if (h.type === "pass") {
+      lines.push(`    ${h.color} ${h.player} PASS (${h.reason})`);
+    }
+  });
+  lines.push("");
+
+  lines.push("Final Board");
+  lines.push("--------------------");
+  lines.push(boardText());
+
+  return lines.join("\n");
+}
+
+function boardText() {
+  const lines = ["  a b c d e f g h"];
+  for (let r = 0; r < S; r++) {
+    const row = [];
+    for (let c = 0; c < S; c++) {
+      row.push(board[r][c] === 1 ? "B" : board[r][c] === 2 ? "W" : ".");
+    }
+    lines.push(`${r + 1} ${row.join(" ")}`);
+  }
+  return lines.join("\n");
+}
+
+function formatTime(t) {
+  if (!t) return "-";
+  const d = new Date(t);
+  const z = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+}
+</script>
+</body>
+</html>
